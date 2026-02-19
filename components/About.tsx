@@ -113,39 +113,7 @@ export function About({ team = DEFAULT_TEAM }: AboutProps) {
           </p>
         </div>
 
-        {/* Team Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-          {team.map((member, index) => (
-            <Card
-              key={member.id}
-              className={cn(
-                'group overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 card-hover',
-                'animate-fade-in-up'
-              )}
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <CardContent className="p-0">
-                <div className="relative aspect-square overflow-hidden">
-                  <img
-                    src={member.image}
-                    alt={member.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="p-5 text-center">
-                  <h4 className="text-lg font-bold text-gray-900 mb-1 group-hover:text-sky-600 transition-colors">
-                    {member.name}
-                  </h4>
-                  <p className="text-sky-600 font-medium text-sm mb-2">{member.role}</p>
-                  {member.bio && (
-                    <p className="text-gray-600 text-sm">{member.bio}</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+
       </div>
     </section>
   );
