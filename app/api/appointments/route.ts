@@ -15,8 +15,10 @@ import { Appointment, AppointmentFormData, AppointmentStatus, ApiResponse } from
 import { Resend } from 'resend';
 import { getCancellationTemplate } from '@/lib/email-templates';
 
-// 1. Initialize Resend with your API Key
-const resend = new Resend(process.env.RESEND_API_KEY);
+// 1. Change the initialization to allow for a missing key during boot
+const resend = process.env.RESEND_API_KEY
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
 
 /**
  * GET - Fetch all appointments from Firestore
@@ -99,58 +101,47 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
 /**
  * PUT - Update appointment status and trigger cancellation email
  */
-export async function PUT(request: NextRequest): Promise<NextResponse<ApiResponse<Appointment>>> {
+export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
         const { id, status, reason, email, fullName, date } = body;
 
-        if (!id) {
-            return NextResponse.json({ success: false, error: 'Appointment ID required' }, { status: 400 });
-        }
+        console.log("--- DEBUG START ---");
+        console.log("ID:", id, "Status:", status);
+        console.log("Key Exists:", !!process.env.RESEND_API_KEY);
+        console.log("Target Email:", email);
 
         const docRef = doc(db, COLLECTIONS.APPOINTMENTS, id);
+        await updateDoc(docRef, { status, updatedAt: Timestamp.now() });
 
-        const updateData: any = {
-            status,
-            updatedAt: Timestamp.now(),
-        };
-
-        // If cancelling, save the reason to the database record
-        if (status === 'cancelled') {
-            updateData.cancellationReason = reason || "No reason specified";
-        }
-
-        await updateDoc(docRef, updateData);
-
-        // 2. TRIGGER EMAIL LOGIC VIA RESEND
         if (status === 'cancelled' && email) {
-            try {
-                // Generate the HTML from your template
-                const emailHtml = getCancellationTemplate(fullName, date, reason || "Schedule conflict");
+            console.log("Attempting Resend to:", email);
 
-                await resend.emails.send({
-                    from: 'Smile Hub <onboarding@resend.dev>', // Keep this for Sandbox mode
-                    to: email, // Must be your registered Resend email for Sandbox mode
-                    subject: 'Update Regarding Your Dental Appointment',
-                    html: emailHtml,
+            if (resend) {
+                const { data, error } = await resend.emails.send({
+                    from: 'Smile Hub <onboarding@resend.dev>',
+                    to: email,
+                    subject: 'Appointment Cancelled',
+                    html: getCancellationTemplate(fullName, date, reason || "Schedule conflict"),
                 });
-                console.log(`Cancellation email sent to ${email}`);
-            } catch (emailError) {
-                // We log the error but don't fail the request because the DB update worked
-                console.error("Resend failed to send email:", emailError);
+
+                if (error) {
+                    console.error("❌ RESEND ERROR:", error);
+                } else {
+                    console.log("✅ RESEND SUCCESS. ID:", data?.id);
+                }
+            } else {
+                console.log("⚠️ RESEND_API_KEY not configured, skipping email");
             }
         }
+        console.log("--- DEBUG END ---");
 
-        return NextResponse.json({
-            success: true,
-            message: status === 'cancelled' ? 'Appointment cancelled and email sent' : 'Status updated'
-        });
+        return NextResponse.json({ success: true });
     } catch (error) {
-        console.error('Error updating appointment:', error);
-        return NextResponse.json({ success: false, error: 'Update failed' }, { status: 500 });
+        console.error("CRASH ERROR:", error);
+        return NextResponse.json({ success: false }, { status: 500 });
     }
 }
-
 /**
  * DELETE - Remove an appointment permanently
  */
