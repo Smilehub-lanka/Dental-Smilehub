@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Award, Users, Clock, Heart } from 'lucide-react';
 import { DEFAULT_TEAM, TeamMember } from '@/types';
 import { cn } from '@/lib/utils';
+import Doctor from '../public/Doctor.png';
 
 interface AboutProps {
   team?: TeamMember[];
@@ -79,26 +80,9 @@ export function About({ team = DEFAULT_TEAM }: AboutProps) {
                 care. Your comfort and well-being are our top priorities.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {stats.map((stat, index) => {
-                const IconComponent = stat.icon;
-                return (
-                  <div
-                    key={index}
-                    className={cn(
-                      'p-4 md:p-6 rounded-2xl bg-gradient-to-br from-white to-gray-50 border border-gray-100',
-                      'hover:shadow-lg transition-shadow'
-                    )}
-                  >
-                    <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center mb-3', stat.bgColor)}>
-                      <IconComponent className={cn('w-5 h-5', stat.color)} />
-                    </div>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-sm text-gray-600">{stat.label}</p>
-                  </div>
-                );
-              })}
-            </div>
+             <div className='flex justify-center items-center'>
+              <img src={Doctor.src} alt="Doctor" className="w-auto h-[25rem] rounded-lg" />
+             </div>
           </div>
         </div>
 
