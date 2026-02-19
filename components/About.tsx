@@ -102,16 +102,7 @@ export function About({ team = DEFAULT_TEAM }: AboutProps) {
           </div>
         </div>
 
-        {/* Team Section */}
-        <div className="text-center mb-12">
-          <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
-            Meet Our Expert Team
-          </h3>
-          <p className="text-gray-600 max-w-2xl mx-auto">
-            Our team of skilled dentists and specialists are dedicated to providing
-            you with the highest quality care in a comfortable environment.
-          </p>
-        </div>
+
 
 
       </div>
