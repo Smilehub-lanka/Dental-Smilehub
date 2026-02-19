@@ -13,9 +13,9 @@ import {
 } from 'firebase/firestore';
 import { Appointment, AppointmentFormData, AppointmentStatus, ApiResponse } from '@/types';
 import { Resend } from 'resend';
-import { getCancellationTemplate } from '@/lib/email-templates';
+import { getCancellationTemplate, getConfirmationTemplate } from '@/lib/email-templates';
 
-// 1. Change the initialization to allow for a missing key during boot
+// Initialize Resend
 const resend = process.env.RESEND_API_KEY
     ? new Resend(process.env.RESEND_API_KEY)
     : null;
@@ -25,13 +25,7 @@ const resend = process.env.RESEND_API_KEY
  */
 export async function GET(): Promise<NextResponse<ApiResponse<Appointment[]>>> {
     try {
-        if (!db) {
-            return NextResponse.json({
-                success: true,
-                data: [],
-                message: 'Firebase not initialized'
-            });
-        }
+        if (!db) return NextResponse.json({ success: true, data: [] });
 
         const appointmentsRef = collection(db, COLLECTIONS.APPOINTMENTS);
         const q = query(appointmentsRef, orderBy('createdAt', 'desc'));
@@ -42,7 +36,6 @@ export async function GET(): Promise<NextResponse<ApiResponse<Appointment[]>>> {
             return {
                 id: doc.id,
                 ...data,
-                // Convert Firestore Timestamps to ISO Strings for Next.js hydration
                 createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
                 updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
             } as Appointment;
@@ -51,10 +44,7 @@ export async function GET(): Promise<NextResponse<ApiResponse<Appointment[]>>> {
         return NextResponse.json({ success: true, data: appointments });
     } catch (error) {
         console.error('Error fetching appointments:', error);
-        return NextResponse.json({
-            success: false,
-            error: 'Failed to fetch appointments'
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Failed to fetch appointments' }, { status: 500 });
     }
 }
 
@@ -65,18 +55,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     try {
         const body: AppointmentFormData = await request.json();
 
-        // Validate all required fields
         if (!body.fullName || !body.age || !body.email || !body.phone || !body.date || !body.time) {
             return NextResponse.json({
                 success: false,
-                error: 'Missing required fields (Name, Age, Email, Phone, Date, or Time)'
+                error: 'Missing required fields'
             }, { status: 400 });
         }
 
         const now = Timestamp.now();
         const appointmentData = {
             ...body,
-            service: body.service || 'General Consultation', // Fallback if service selection is hidden
+            service: body.service || 'General Consultation',
             status: 'pending' as AppointmentStatus,
             createdAt: now,
             updatedAt: now,
@@ -90,58 +79,69 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
             data: { id: docRef.id, ...body } as any
         });
     } catch (error) {
-        console.error('Error creating appointment:', error);
-        return NextResponse.json({
-            success: false,
-            error: 'Server error while booking appointment'
-        }, { status: 500 });
+        return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 });
     }
 }
 
 /**
- * PUT - Update appointment status and trigger cancellation email
+ * PUT - Update status and send either Confirmation or Cancellation email
  */
 export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
-        const { id, status, reason, email, fullName, date } = body;
+        const { id, status, reason, email, fullName, date, time } = body;
 
-        console.log("--- DEBUG START ---");
-        console.log("ID:", id, "Status:", status);
-        console.log("Key Exists:", !!process.env.RESEND_API_KEY);
-        console.log("Target Email:", email);
+        if (!id) return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 });
+
+        console.log(`--- UPDATING STATUS: ${status} ---`);
 
         const docRef = doc(db, COLLECTIONS.APPOINTMENTS, id);
-        await updateDoc(docRef, { status, updatedAt: Timestamp.now() });
 
-        if (status === 'cancelled' && email) {
-            console.log("Attempting Resend to:", email);
+        // Prepare DB update
+        const updateData: any = { status, updatedAt: Timestamp.now() };
+        if (status === 'cancelled') {
+            updateData.cancellationReason = reason || "No reason specified";
+        }
 
-            if (resend) {
+        // Update Firestore
+        await updateDoc(docRef, updateData);
+
+        // TRIGGER EMAIL LOGIC
+        if (resend && email) {
+            let emailSubject = '';
+            let emailHtml = '';
+
+            // Handle Cancellation
+            if (status === 'cancelled') {
+                emailSubject = 'Appointment Cancellation - Smile Hub';
+                emailHtml = getCancellationTemplate(fullName, date, reason || "Schedule conflict");
+            }
+            // Handle Acceptance
+            else if (status === 'confirmed') {
+                emailSubject = 'Appointment Confirmed - Smile Hub';
+                emailHtml = getConfirmationTemplate(fullName, date, time);
+            }
+
+            if (emailHtml) {
                 const { data, error } = await resend.emails.send({
-                    from: 'Smile Hub <onboarding@resend.dev>',
+                    from: 'Smile Hub <appointments@rexod.me>',
                     to: email,
-                    subject: 'Appointment Cancelled',
-                    html: getCancellationTemplate(fullName, date, reason || "Schedule conflict"),
+                    subject: emailSubject,
+                    html: emailHtml,
                 });
 
-                if (error) {
-                    console.error("❌ RESEND ERROR:", error);
-                } else {
-                    console.log("✅ RESEND SUCCESS. ID:", data?.id);
-                }
-            } else {
-                console.log("⚠️ RESEND_API_KEY not configured, skipping email");
+                if (error) console.error("❌ RESEND ERROR:", error);
+                else console.log("✅ EMAIL SENT SUCCESS. ID:", data?.id);
             }
         }
-        console.log("--- DEBUG END ---");
 
-        return NextResponse.json({ success: true });
+        return NextResponse.json({ success: true, message: `Appointment ${status}` });
     } catch (error) {
         console.error("CRASH ERROR:", error);
         return NextResponse.json({ success: false }, { status: 500 });
     }
 }
+
 /**
  * DELETE - Remove an appointment permanently
  */
@@ -149,15 +149,11 @@ export async function DELETE(request: NextRequest): Promise<NextResponse<ApiResp
     try {
         const { searchParams } = new URL(request.url);
         const id = searchParams.get('id');
-
-        if (!id) {
-            return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 });
-        }
+        if (!id) return NextResponse.json({ success: false, error: 'ID required' }, { status: 400 });
 
         await deleteDoc(doc(db, COLLECTIONS.APPOINTMENTS, id));
         return NextResponse.json({ success: true, message: 'Deleted successfully' });
     } catch (error) {
-        console.error('Error deleting appointment:', error);
         return NextResponse.json({ success: false, error: 'Delete failed' }, { status: 500 });
     }
 }
