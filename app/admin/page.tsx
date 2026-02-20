@@ -297,11 +297,28 @@ export default function AdminPage() {
     /**
      * APPOINTMENT UPDATE LOGIC
      */
-    const updateStatus = async (id: string, status: AppointmentStatus, reason?: string) => {
+    const updateStatus = async (
+        id: string,
+        status: AppointmentStatus,
+        reason?: string
+    ) => {
+
         setUpdatingId(id);
+
         const appointment = appointments.find(a => a.id === id);
 
+        // ⭐ OPTIMISTIC UI UPDATE
+        // prevents UI from feeling like full reload
+        setAppointments(prev =>
+            prev.map(a =>
+                a.id === id
+                    ? { ...a, status }
+                    : a
+            )
+        );
+
         try {
+
             const response = await fetch('/api/appointments', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -317,20 +334,43 @@ export default function AdminPage() {
             });
 
             const result = await response.json();
+
             if (result.success) {
+
                 toast.success(`Appointment ${status} successfully`);
+
                 setIsCancelDialogOpen(false);
                 setCancelReason('');
+
             } else {
+
                 throw new Error(result.error);
+
             }
+
         } catch (error) {
+
+            // rollback if API fails
+            if (appointment) {
+
+                setAppointments(prev =>
+                    prev.map(a =>
+                        a.id === id
+                            ? appointment
+                            : a
+                    )
+                );
+
+            }
+
             toast.error('Failed to update status');
+
         } finally {
+
             setUpdatingId(null);
+
         }
     };
-
     const handleStatusChange = (id: string, status: AppointmentStatus) => {
         if (status === 'cancelled') {
             const appt = appointments.find(a => a.id === id);
