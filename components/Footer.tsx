@@ -114,7 +114,7 @@ export function Footer() {
             <ul className="space-y-3 text-gray-400">
               <li className="flex items-start gap-3">
                 <span className="text-sky-400">📍</span>
-                <span>123 Dental Street<br />Healthcare District<br />New York, NY 10001</span>
+                <span>Hokandara Road, Athurugiriya</span>
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-sky-400">📞</span>
@@ -126,7 +126,7 @@ export function Footer() {
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-sky-400">🕐</span>
-                <span>Mon-Fri: 9AM - 6PM<br />Sat: 9AM - 2PM<br />Sun: Closed</span>
+                <span>Mon-Fri: 9AM - 9PM<br />Sat: 9AM - 9PM<br />Sun: 9AM - 9PM</span>
               </li>
             </ul>
           </div>

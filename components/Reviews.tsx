@@ -17,33 +17,33 @@ interface Review {
 // Manually defined reviews for the clinic
 const MANUAL_REVIEWS: Review[] = [
     {
-        author_name: "Chaminda Perera",
+        author_name: "Aravind Prabash",
         rating: 5,
-        text: "Excellent service! Dr. Ovitigala and the team are very professional. The clinic is extremely clean and they use the latest technology. Highly recommended for anyone in Athurugiriya.",
+        text: "I had a great experience at this clinic. After being turned away by a few other places, the dentist here was kind, patient, and willing to help without hesitation. The issue was handled quickly and professionally, and I felt genuinely cared for throughout the visit. Truly grateful for the support and professionalism. Highly recommend.",
 
     },
     {
-        author_name: "Nilanthi Silva",
+        author_name: "Sean Felthman",
         rating: 5,
-        text: "The best dental hospital for implants. I was very nervous about the procedure, but Dr. M.K. Ovitigala made me feel very comfortable. The results are amazing.",
+        text: "Exceptional experience! I’m so grateful for the amazing care my little boy received today! He’s just 6, and the doctor was so gentle and patient, he didn’t feel a thing throughout the procedure. I also had my nerve filling done, and it was a smooth n completely hassle-free process, with reasonable rates using the latest technology and high-quality products. The staff were friendly and attentive too.Highly recommend this place for a professional service for both kids and adults!",
 
     },
     {
-        author_name: "Ruwan Jayawardena",
+        author_name: "Travel Pass",
         rating: 5,
-        text: "Very friendly staff and excellent patient care. They explain everything clearly before starting the treatment. My kids also love visiting this place!",
+        text: "I had an excellent experience with Dr. Ovitigala. From the moment I walked in, I felt comfortable and well cared for. Dr. Ovitigala is extremely professional, gentle, and thorough, taking the time to explain each step of the treatment and answer all my questions. The procedure was smooth and pain-free, and the results exceeded my expectations. I truly appreciate the attention to detail and genuine care shown throughout my visit. Highly recommended for anyone looking for a skilled and trustworthy dentist.",
 
     },
     {
-        author_name: "Sandeepani Fernando",
+        author_name: "Kasun Eranda",
         rating: 5,
-        text: "Highly recommended for orthodontic treatments. Professional approach and very reasonable pricing compared to other places in Colombo.",
+        text: "Dr. Kaushika (Ovitigala) is very skilled and knowledgeable. He takes time to explain the situation and offers professional advice to help the patient take the best decision. The premise is also well maintained and the staff is friendly and helpful. Highly recommended. (For those who are considering traveling from afar, it’s well worth it.)",
 
     },
     {
-        author_name: "Aruna Kumara",
+        author_name: "Malshi Shyamika",
         rating: 5,
-        text: "The Smile Hub provides top-notch dental care. I went for a wisdom tooth extraction and it was completely painless. Great follow-up care as well.",
+        text: "This place is wow! It’s my very first time walking into a dental clinic. I found the place by coincidence cuz I drove from Maharagama to Athurugiriya. Dr. Ovitigala made the whole process very easy, and took away my anxiety. He was very friendly and it made me calm cuz I’m not a fan of the sounds made by the dental items. He did everything very quickly and I got teeth cleaning, cavity filling and a tooth gap filling done under like 40 mins. He ensured I’m satisfied with the result till he said the word “We are done with that”. Deserving all stars for sure✨",
 
     }
 ];
