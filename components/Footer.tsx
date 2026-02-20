@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Smile, Facebook, Twitter, Instagram, Linkedin, Heart } from 'lucide-react';
+import { Smile, Heart } from 'lucide-react';
+import { LuFacebook, LuInstagram,  } from "react-icons/lu";
+import { ImWhatsapp } from "react-icons/im";
+import Logo from '../public/Logo.png';
 
 const footerLinks = {
   quickLinks: [
@@ -21,10 +24,9 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Twitter, href: '#', label: 'Twitter' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Linkedin, href: '#', label: 'LinkedIn' },
+  { icon: LuFacebook, href: 'https://www.facebook.com/share/17kkBqsLRr/', label: 'Facebook' },
+  { icon: LuInstagram, href: 'https://www.instagram.com/the_smile_hub_?igsh=MnF6ZTEyeG40Mm4=', label: 'Instagram' },
+  { icon: ImWhatsapp, href: 'https://wa.me/94777421620', label: 'WhatsApp' },
 ];
 
 export function Footer() {
@@ -45,8 +47,8 @@ export function Footer() {
           {/* Brand */}
           <div className="lg:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-sky-600 rounded-xl flex items-center justify-center">
-                <Smile className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 flex items-center justify-center">
+                <img src={Logo.src} alt="Smile Hub Logo" className="w-auto h-6" />
               </div>
               <span className="text-xl font-bold">Smile Hub</span>
             </div>
@@ -116,11 +118,11 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-sky-400">📞</span>
-                <span>+1 (555) 123-4567</span>
+                <span>+94 77 742 1620</span>
               </li>
               <li className="flex items-center gap-3">
                 <span className="text-sky-400">✉️</span>
-                <span>info@smilehub.com</span>
+                <span>mkovitigala@gmail.com</span>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-sky-400">🕐</span>
