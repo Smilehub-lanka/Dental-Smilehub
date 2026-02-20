@@ -10,7 +10,7 @@ interface Review {
     author_name: string;
     rating: number;
     text: string;
-    relative_time_description: string;
+
     profile_photo_url?: string;
 }
 
@@ -20,31 +20,31 @@ const MANUAL_REVIEWS: Review[] = [
         author_name: "Chaminda Perera",
         rating: 5,
         text: "Excellent service! Dr. Ovitigala and the team are very professional. The clinic is extremely clean and they use the latest technology. Highly recommended for anyone in Athurugiriya.",
-        relative_time_description: "1 month ago",
+
     },
     {
         author_name: "Nilanthi Silva",
         rating: 5,
         text: "The best dental hospital for implants. I was very nervous about the procedure, but Dr. M.K. Ovitigala made me feel very comfortable. The results are amazing.",
-        relative_time_description: "2 months ago",
+
     },
     {
         author_name: "Ruwan Jayawardena",
         rating: 5,
         text: "Very friendly staff and excellent patient care. They explain everything clearly before starting the treatment. My kids also love visiting this place!",
-        relative_time_description: "3 weeks ago",
+
     },
     {
         author_name: "Sandeepani Fernando",
         rating: 5,
         text: "Highly recommended for orthodontic treatments. Professional approach and very reasonable pricing compared to other places in Colombo.",
-        relative_time_description: "4 months ago",
+
     },
     {
         author_name: "Aruna Kumara",
         rating: 5,
         text: "The Smile Hub provides top-notch dental care. I went for a wisdom tooth extraction and it was completely painless. Great follow-up care as well.",
-        relative_time_description: "5 months ago",
+
     }
 ];
 
