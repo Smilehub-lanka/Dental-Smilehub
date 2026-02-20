@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-// Using standard anchor tags for navigation to ensure compatibility if 'next/link' fails to resolve
-// Adjusted relative paths to one level up to test resolution in this specific environment
+import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import {
     collection,
@@ -40,7 +39,12 @@ import {
     Plus,
     AlertCircle,
     CheckCircle2,
-    ExternalLink
+    ExternalLink,
+    UserPlus,
+    Clock,
+    Phone,
+    Mail,
+    MessageSquare
 } from 'lucide-react';
 import {
     Dialog,
@@ -51,6 +55,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -68,10 +73,27 @@ export default function AdminPage() {
     const [isComparison, setIsComparison] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
 
+    // Messages State
+    const [messages, setMessages] = useState<any[]>([]);
+    const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+
     // Cancellation Dialog State
     const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
     const [cancelReason, setCancelReason] = useState('');
     const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+
+    // Manual Booking State
+    const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
+    const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+    const [manualBooking, setManualBooking] = useState({
+        fullName: '',
+        phone: '',
+        time: '',
+        date: new Date().toISOString().split('T')[0], // Default to today
+        email: '',
+        service: 'Manual Booking',
+        message: ''
+    });
 
     /**
      * REAL-TIME LISTENERS
@@ -105,14 +127,71 @@ export default function AdminPage() {
             setGalleryItems(items);
         });
 
+        // Sync Messages (Contacts)
+        const qMessages = query(collection(db, 'contacts'), orderBy('createdAt', 'desc'));
+        const unsubMessages = onSnapshot(qMessages, (snapshot) => {
+            const items = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                createdAt: doc.data().createdAt?.toDate?.()?.toLocaleString() || 'N/A'
+            }));
+            setMessages(items);
+            setIsLoadingMessages(false);
+        }, (err) => {
+            console.error("Firestore contacts error:", err);
+            setIsLoadingMessages(false);
+        });
+
         return () => {
             unsubAppts();
             unsubGallery();
+            unsubMessages();
         };
     }, [user, isAdminUser]);
 
     /**
-     * IMPROVED CLOUDINARY UPLOAD LOGIC
+     * MANUAL BOOKING HANDLER
+     */
+    const handleManualBookingSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!db) return;
+
+        // Only enforce Name, Phone, and Time per user request
+        if (!manualBooking.fullName || !manualBooking.phone || !manualBooking.time) {
+            toast.error("Name, Phone, and Time Slot are required.");
+            return;
+        }
+
+        setIsSubmittingBooking(true);
+        try {
+            await addDoc(collection(db, 'appointments'), {
+                ...manualBooking,
+                status: 'confirmed', // Admin bookings can be confirmed by default
+                createdAt: Timestamp.now(),
+                updatedAt: Timestamp.now(),
+            });
+
+            toast.success("Appointment successfully booked!");
+            setIsBookingDialogOpen(false);
+            setManualBooking({
+                fullName: '',
+                phone: '',
+                time: '',
+                date: new Date().toISOString().split('T')[0],
+                email: '',
+                service: 'Manual Booking',
+                message: ''
+            });
+        } catch (error) {
+            console.error(error);
+            toast.error("Failed to save booking.");
+        } finally {
+            setIsSubmittingBooking(false);
+        }
+    };
+
+    /**
+     * CLOUDINARY UPLOAD LOGIC
      */
     const uploadToCloudinary = async (file: File) => {
         const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
@@ -200,6 +279,18 @@ export default function AdminPage() {
         if (window.confirm("Delete this gallery item?")) {
             await deleteDoc(doc(db, 'gallery', id));
             toast.success("Item deleted");
+        }
+    };
+
+    const deleteMessage = async (id: string) => {
+        if (!db) return;
+        if (window.confirm("Are you sure you want to delete this message?")) {
+            try {
+                await deleteDoc(doc(db, 'contacts', id));
+                toast.success("Message deleted");
+            } catch (error) {
+                toast.error("Failed to delete message");
+            }
         }
     };
 
@@ -294,7 +385,7 @@ export default function AdminPage() {
                 <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Practice Dashboard</h1>
-                        <p className="text-gray-500 text-sm">Real-time scheduling and transformation gallery.</p>
+                        <p className="text-gray-500 text-sm">Real-time scheduling, transformations, and patient inquiries.</p>
                     </div>
                     <LoginButton />
                 </div>
@@ -310,6 +401,14 @@ export default function AdminPage() {
                         <TabsTrigger value="gallery" className="rounded-xl py-2.5 px-5">
                             <ImageIcon className="w-4 h-4 mr-2" /> Gallery
                         </TabsTrigger>
+                        <TabsTrigger value="messages" className="rounded-xl py-2.5 px-5">
+                            <MessageSquare className="w-4 h-4 mr-2" /> Messages
+                            {messages.length > 0 && (
+                                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">
+                                    {messages.length}
+                                </span>
+                            )}
+                        </TabsTrigger>
                         <TabsTrigger value="dashboard" className="rounded-xl py-2.5 px-5">
                             <LayoutDashboard className="w-4 h-4 mr-2" /> Analytics
                         </TabsTrigger>
@@ -317,6 +416,17 @@ export default function AdminPage() {
 
                     <TabsContent value="calendar" className="mt-0 outline-none">
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm min-h-[500px]">
+                            {/* Calendar Header with Manual Booking Trigger */}
+                            <div className="flex justify-between items-center mb-6 px-2">
+                                <h2 className="text-xl font-bold text-slate-800">Clinic Schedule</h2>
+                                <Button
+                                    onClick={() => setIsBookingDialogOpen(true)}
+                                    className="bg-sky-600 hover:bg-sky-700 text-white rounded-full shadow-lg shadow-sky-100 transition-all hover:scale-105"
+                                >
+                                    <UserPlus className="w-4 h-4 mr-2" /> Book Session
+                                </Button>
+                            </div>
+
                             {isLoadingAppointments ? <Loader2 className="animate-spin mx-auto my-20 text-sky-500" /> : (
                                 <CalendarView appointments={appointments} onUpdateStatus={handleStatusChange} updatingId={updatingId} />
                             )}
@@ -426,11 +536,181 @@ export default function AdminPage() {
                         </div>
                     </TabsContent>
 
+                    <TabsContent value="messages" className="mt-0 outline-none">
+                        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm min-h-[500px]">
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-slate-800">
+                                <Mail className="w-5 h-5 text-sky-500" /> Patient Inquiries
+                            </h2>
+
+                            {isLoadingMessages ? (
+                                <div className="flex justify-center py-20">
+                                    <Loader2 className="w-8 h-8 animate-spin text-sky-500" />
+                                </div>
+                            ) : messages.length === 0 ? (
+                                <div className="text-center py-20 text-slate-400">
+                                    <Mail className="w-12 h-12 mx-auto mb-4 opacity-20" />
+                                    <p>No messages received yet.</p>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {messages.map((msg) => (
+                                        <Card key={msg.id} className="border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden">
+                                            <CardContent className="p-6">
+                                                <div className="flex justify-between items-start mb-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center text-sky-600 font-bold">
+                                                            {msg.name?.charAt(0).toUpperCase()}
+                                                        </div>
+                                                        <div>
+                                                            <h3 className="font-bold text-slate-900">{msg.name}</h3>
+                                                            <p className="text-xs text-slate-500 flex items-center gap-1">
+                                                                <Clock className="w-3 h-3" /> {msg.createdAt}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full h-8 w-8"
+                                                        onClick={() => deleteMessage(msg.id)}
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </Button>
+                                                </div>
+
+                                                <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
+                                                    <p className="text-sm text-slate-700 italic">"{msg.message}"</p>
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2">
+                                                    <a href={`mailto:${msg.email}`} className="text-xs flex items-center gap-1.5 text-sky-600 bg-sky-50 px-3 py-1.5 rounded-full hover:bg-sky-100 transition-colors font-medium">
+                                                        <Mail className="w-3 h-3" /> {msg.email}
+                                                    </a>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </TabsContent>
+
                     <TabsContent value="dashboard" className="mt-0 outline-none">
                         <AdminDashboard appointments={appointments} />
                     </TabsContent>
                 </Tabs>
             </main>
+
+            {/* MANUAL BOOKING DIALOG */}
+            <Dialog open={isBookingDialogOpen} onOpenChange={setIsBookingDialogOpen}>
+                <DialogContent className="rounded-3xl sm:max-w-[500px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+                            <UserPlus className="w-6 h-6 text-sky-500" /> Manual Booking
+                        </DialogTitle>
+                        <DialogDescription>
+                            Schedule a patient session. Only fields marked with * are required.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <form onSubmit={handleManualBookingSubmit} className="space-y-5 py-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block ml-1">Patient Name *</label>
+                                <Input
+                                    required
+                                    placeholder="Enter full name"
+                                    value={manualBooking.fullName}
+                                    onChange={(e) => setManualBooking({ ...manualBooking, fullName: e.target.value })}
+                                    className="rounded-xl border-slate-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block ml-1">Phone Number *</label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                    <Input
+                                        required
+                                        placeholder="07X XXX XXXX"
+                                        value={manualBooking.phone}
+                                        onChange={(e) => setManualBooking({ ...manualBooking, phone: e.target.value })}
+                                        className="rounded-xl border-slate-200 pl-10"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block ml-1">Date *</label>
+                                <Input
+                                    type="date"
+                                    required
+                                    value={manualBooking.date}
+                                    onChange={(e) => setManualBooking({ ...manualBooking, date: e.target.value })}
+                                    className="rounded-xl border-slate-200"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block ml-1">Time Slot *</label>
+                                <div className="relative">
+                                    <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                                    <select
+                                        required
+                                        className="flex h-10 w-full rounded-xl border border-slate-200 bg-white px-10 py-2 text-sm ring-offset-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500"
+                                        value={manualBooking.time}
+                                        onChange={(e) => setManualBooking({ ...manualBooking, time: e.target.value })}
+                                    >
+                                        <option value="">Select Time</option>
+                                        <option value="09:00 AM">09:00 AM</option>
+                                        <option value="10:00 AM">10:00 AM</option>
+                                        <option value="11:00 AM">11:00 AM</option>
+                                        <option value="02:00 PM">02:00 PM</option>
+                                        <option value="03:00 PM">03:00 PM</option>
+                                        <option value="04:00 PM">04:00 PM</option>
+                                        <option value="06:00 PM">06:00 PM</option>
+                                        <option value="07:00 PM">07:00 PM</option>
+                                        <option value="08:00 PM">08:00 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block ml-1">Email Address (Optional)</label>
+                            <Input
+                                type="email"
+                                placeholder="patient@email.com"
+                                value={manualBooking.email}
+                                onChange={(e) => setManualBooking({ ...manualBooking, email: e.target.value })}
+                                className="rounded-xl border-slate-200"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block ml-1">Service & Notes (Optional)</label>
+                            <Textarea
+                                placeholder="E.g. Root Canal, Follow up visit..."
+                                value={manualBooking.message}
+                                onChange={(e) => setManualBooking({ ...manualBooking, message: e.target.value })}
+                                className="rounded-xl border-slate-200 min-h-[80px] resize-none"
+                            />
+                        </div>
+
+                        <DialogFooter className="pt-4">
+                            <Button type="button" variant="ghost" onClick={() => setIsBookingDialogOpen(false)} className="rounded-full">Cancel</Button>
+                            <Button
+                                type="submit"
+                                disabled={isSubmittingBooking}
+                                className="bg-sky-600 hover:bg-sky-700 text-white rounded-full px-8 shadow-lg shadow-sky-100"
+                            >
+                                {isSubmittingBooking ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                                Confirm Booking
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* CANCELLATION DIALOG */}
             <Dialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>

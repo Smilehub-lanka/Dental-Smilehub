@@ -16,9 +16,20 @@ export function Hero() {
       id="home"
       className="relative min-h-screen flex items-center justify-center overflow-hidden"
     >
-      {/* Background */}
-      <div className="absolute inset-0 hero-gradient" />
-      <div className="absolute inset-0 pattern-bg opacity-30" />
+      {/* Background Image Layer */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="https://github.com/nngeek195/Dental-Smilehub/blob/master/hero.jpg?raw=true"
+          alt="Dental Clinic Background"
+          className="w-full h-full object-cover" // Control transparency here (0-100)
+        />
+        {/* Color Tint Overlay to maintain the blue theme */}
+        <div className="absolute inset-0 bg-gradient-to-b from-sky-100/50 via-white/20 to-white" />
+      </div>
+
+      {/* Background Gradients & Patterns */}
+      <div className="absolute inset-0 hero-gradient opacity-80" />
+      <div className="absolute inset-0 pattern-bg opacity-20" />
 
       {/* Decorative shapes */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-sky-300/30 rounded-full blur-3xl" />

@@ -50,6 +50,10 @@ const contactInfo = [
   },
 ];
 
+/**
+ * Contact: Explicitly exported as a named function to match the import 
+ * in app/page.tsx: import { Contact } from '@/components/Contact'
+ */
 export function Contact() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -67,6 +71,7 @@ export function Contact() {
     setIsSubmitting(true);
 
     try {
+      // Sends message to the /api/contacts endpoint which saves to Firestore
       const response = await fetch('/api/contacts', {
         method: 'POST',
         headers: {
@@ -80,7 +85,7 @@ export function Contact() {
       if (result.success) {
         setIsSuccess(true);
         toast.success('Message sent successfully!', {
-          description: 'We will get back to you as soon as possible.',
+          description: 'Our team will review your inquiry and get back to you soon.',
         });
         form.reset();
       } else {
@@ -98,7 +103,6 @@ export function Contact() {
   return (
     <section id="contact" className="py-20 md:py-28 bg-gradient-to-b from-white to-sky-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="inline-block px-4 py-1.5 bg-sky-100 text-sky-600 rounded-full text-sm font-medium mb-4">
             Contact Us
@@ -116,26 +120,19 @@ export function Contact() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Contact Info & Map */}
           <div className="space-y-8">
-            {/* Contact Cards */}
             <div className="grid sm:grid-cols-2 gap-4">
               {contactInfo.map((info, index) => {
                 const IconComponent = info.icon;
                 return (
-                  <Card
-                    key={index}
-                    className="border-0 shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
+                  <Card key={index} className="border-0 shadow-lg hover:shadow-xl transition-all duration-300">
                     <CardContent className="p-6">
                       <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-4">
                         <IconComponent className="w-6 h-6 text-sky-600" />
                       </div>
                       <h3 className="font-bold text-gray-900 mb-2">{info.title}</h3>
                       {info.details.map((detail, idx) => (
-                        <p key={idx} className="text-gray-600 text-sm">
-                          {detail}
-                        </p>
+                        <p key={idx} className="text-gray-600 text-sm">{detail}</p>
                       ))}
                     </CardContent>
                   </Card>
@@ -143,7 +140,6 @@ export function Contact() {
               })}
             </div>
 
-            {/* Live Interactive Map */}
             <Card className="border-0 shadow-xl overflow-hidden group">
               <div className="relative">
                 <iframe
@@ -153,16 +149,11 @@ export function Contact() {
                   style={{ border: 0 }}
                   allowFullScreen
                   loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
                   title="The Smile Hub Location"
                   className="grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
                 ></iframe>
                 <div className="absolute top-4 right-4">
-                  <a
-                    href="https://www.google.com/maps/place/The+Smile+Hub+-+Dental+Hospital+%26+dental+impant+center+Athurugiriya+(By+Dr+M.K+Ovitigala)/@6.8795005,79.9848827,16z"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a href="https://www.google.com/maps/place/The+Smile+Hub+-+Dental+Hospital+%26+dental+impant+center+Athurugiriya+(By+Dr+M.K+Ovitigala)/@6.8795005,79.9848827,16z" target="_blank" rel="noopener noreferrer">
                     <Button size="sm" variant="secondary" className="shadow-lg rounded-full h-8 px-3 text-[10px] font-bold uppercase tracking-wider">
                       Open in Maps <ExternalLink className="ml-1 h-3 w-3" />
                     </Button>
@@ -172,7 +163,6 @@ export function Contact() {
             </Card>
           </div>
 
-          {/* Contact Form */}
           <Card className="border-0 shadow-2xl">
             <CardContent className="p-6 md:p-10">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h3>
@@ -205,7 +195,7 @@ export function Contact() {
                           <FormLabel className="text-gray-700">Your Name</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="Niranga Nayanajith"
+                              placeholder="Your Full Name"
                               className="border-gray-200 focus:ring-sky-500 rounded-xl py-6"
                               {...field}
                             />
@@ -224,7 +214,7 @@ export function Contact() {
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="Niranga@example.com"
+                              placeholder="your@email.com"
                               className="border-gray-200 focus:ring-sky-500 rounded-xl py-6"
                               {...field}
                             />
@@ -242,7 +232,7 @@ export function Contact() {
                           <FormLabel className="text-gray-700">Your Message</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="How can we help you? Describe your dental concerns..."
+                              placeholder="Describe your dental concerns or questions..."
                               className="border-gray-200 focus:ring-sky-500 min-h-[150px] resize-none rounded-2xl"
                               {...field}
                             />
