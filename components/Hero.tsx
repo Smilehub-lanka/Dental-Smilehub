@@ -28,7 +28,7 @@ export function Hero() {
       </div>
 
       {/* Background Gradients & Patterns */}
-      <div className="absolute inset-0 hero-gradient opacity-80" />
+      <div className="absolute inset-0 hero-gradient opacity-60" />
       <div className="absolute inset-0 pattern-bg opacity-20" />
 
       {/* Decorative shapes */}
