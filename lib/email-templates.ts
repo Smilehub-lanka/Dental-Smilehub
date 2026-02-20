@@ -18,8 +18,7 @@ const emailFooter = `
           <td align="center" style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
             <p style="margin: 0 0 10px 0;">
               <strong style="color: #e2e8f0;">Smile Hub Dental Clinic</strong><br/>
-              123 Dental Street, Healthcare District<br/>
-              New York, NY 10001
+              Hokandara Road, Athurugiriya, Sri Lanka
             </p>
             <p style="margin: 0 0 15px 0;">
               📞 +94 77 742 1620 &nbsp;|&nbsp; ✉️ mkovitigala@gmail.com
@@ -111,7 +110,7 @@ export const getConfirmationTemplate = (fullName: string, date: string, time: st
             </div>
 
             <p style="font-size: 14px; color: #64748b; line-height: 1.6;">
-              📍 <strong>Location:</strong> Smile Hub Dental Clinic, Healthcare District<br/>
+              📍 <strong>Location:</strong> Smile Hub Dental Clinic<br/>
               ⏰ <strong>Reminders:</strong> Please arrive 10 minutes early. If you need to change your appointment, contact us at least 24 hours in advance.
             </p>
           </td>
