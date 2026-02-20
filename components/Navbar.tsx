@@ -104,8 +104,17 @@ export function Navbar() {
                     className="flex items-center gap-2 cursor-pointer"
                     onClick={() => setIsOpen(false)}
                   >
-                    <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-sky-600 rounded-xl flex items-center justify-center">
-                      <Smile className="w-6 h-6 text-white" />
+                    {/* Logo */}
+                    <div
+                      className="flex items-center gap-2 group cursor-pointer"
+                      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
+                      <div className="relative w-10 h-10 flex items-center justify-center">
+                        <img src={Logo.src} alt="Smile Hub Logo" className="w-auto h-6" />
+                      </div>
+                      <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-sky-500 bg-clip-text text-transparent">
+                        Smile Hub
+                      </span>
                     </div>
                     <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-sky-500 bg-clip-text text-transparent">
                       Smile Hub
