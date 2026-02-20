@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+// Restoring standard path aliases which are standard for Next.js environments
 import { db } from '@/lib/firebase';
+import Logo from '@/public/Logo.png';
 import {
     collection,
     query,
@@ -12,7 +14,8 @@ import {
     updateDoc,
     deleteDoc,
     addDoc,
-    Timestamp
+    Timestamp,
+    writeBatch
 } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -76,6 +79,14 @@ export default function AdminPage() {
     // Messages State
     const [messages, setMessages] = useState<any[]>([]);
     const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+
+    /**
+     * NOTIFICATION BADGE LOGIC
+     * Filter messages where isRead is not true to show accurate count.
+     */
+    const unreadCount = useMemo(() => {
+        return messages.filter(m => m.isRead !== true).length;
+    }, [messages]);
 
     // Cancellation Dialog State
     const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
@@ -150,13 +161,38 @@ export default function AdminPage() {
     }, [user, isAdminUser]);
 
     /**
+     * PERSISTENT NOTIFICATION REMOVAL
+     * Mark all unread messages as read when the admin views the messages tab.
+     */
+    useEffect(() => {
+        if (activeTab === 'messages' && unreadCount > 0 && db) {
+            const markAllAsRead = async () => {
+                const unreadMessages = messages.filter(m => m.isRead !== true);
+                if (unreadMessages.length === 0) return;
+
+                const batch = writeBatch(db);
+                unreadMessages.forEach((msg) => {
+                    const msgRef = doc(db, 'contacts', msg.id);
+                    batch.update(msgRef, { isRead: true });
+                });
+
+                try {
+                    await batch.commit();
+                } catch (error) {
+                    console.error("Error clearing message notifications:", error);
+                }
+            };
+            markAllAsRead();
+        }
+    }, [activeTab, unreadCount, messages]);
+
+    /**
      * MANUAL BOOKING HANDLER
      */
     const handleManualBookingSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!db) return;
 
-        // Only enforce Name, Phone, and Time per user request
         if (!manualBooking.fullName || !manualBooking.phone || !manualBooking.time) {
             toast.error("Name, Phone, and Time Slot are required.");
             return;
@@ -166,7 +202,7 @@ export default function AdminPage() {
         try {
             await addDoc(collection(db, 'appointments'), {
                 ...manualBooking,
-                status: 'confirmed', // Admin bookings can be confirmed by default
+                status: 'confirmed',
                 createdAt: Timestamp.now(),
                 updatedAt: Timestamp.now(),
             });
@@ -216,9 +252,9 @@ export default function AdminPage() {
             if (!res.ok) {
                 console.error("Cloudinary Error Detail:", json);
                 if (json.error?.message?.includes("Upload preset not found")) {
-                    throw new Error(`Cloudinary Error: The preset "${uploadPreset}" was not found. Please ensure you created an UNSIGNED preset with this exact name.`);
+                    throw new Error(`Cloudinary Error: The preset "${uploadPreset}" was not found.`);
                 }
-                throw new Error(json.error?.message || "Upload to Cloudinary failed");
+                throw new Error(json.error?.message || "Upload failed");
             }
 
             return json.secure_url;
@@ -297,28 +333,16 @@ export default function AdminPage() {
     /**
      * APPOINTMENT UPDATE LOGIC
      */
-    const updateStatus = async (
-        id: string,
-        status: AppointmentStatus,
-        reason?: string
-    ) => {
-
+    const updateStatus = async (id: string, status: AppointmentStatus, reason?: string) => {
         setUpdatingId(id);
-
         const appointment = appointments.find(a => a.id === id);
 
-        // ⭐ OPTIMISTIC UI UPDATE
-        // prevents UI from feeling like full reload
+        // OPTIMISTIC UI UPDATE
         setAppointments(prev =>
-            prev.map(a =>
-                a.id === id
-                    ? { ...a, status }
-                    : a
-            )
+            prev.map(item => item.id === id ? { ...item, status } : item)
         );
 
         try {
-
             const response = await fetch('/api/appointments', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -334,43 +358,26 @@ export default function AdminPage() {
             });
 
             const result = await response.json();
-
             if (result.success) {
-
                 toast.success(`Appointment ${status} successfully`);
-
                 setIsCancelDialogOpen(false);
                 setCancelReason('');
-
             } else {
-
                 throw new Error(result.error);
-
             }
-
         } catch (error) {
-
-            // rollback if API fails
+            // Rollback on error
             if (appointment) {
-
                 setAppointments(prev =>
-                    prev.map(a =>
-                        a.id === id
-                            ? appointment
-                            : a
-                    )
+                    prev.map(item => item.id === id ? appointment : item)
                 );
-
             }
-
             toast.error('Failed to update status');
-
         } finally {
-
             setUpdatingId(null);
-
         }
     };
+
     const handleStatusChange = (id: string, status: AppointmentStatus) => {
         if (status === 'cancelled') {
             const appt = appointments.find(a => a.id === id);
@@ -406,15 +413,20 @@ export default function AdminPage() {
             {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <a href="/" className="flex items-center gap-2">
-                            <Smile className="w-6 h-6 text-sky-500" />
-                            <span className="font-bold text-xl hidden sm:inline-block">Smile Hub</span>
-                        </a>
-                        <span className="px-2 py-0.5 bg-sky-100 text-sky-700 rounded text-[10px] font-bold tracking-widest uppercase">Admin</span>
+                    {/* Logo */}
+                    <div
+                        className="flex items-center gap-2 group cursor-pointer"
+                        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    >
+                        <div className="relative w-10 h-10 flex items-center justify-center">
+                            <img src={Logo.src} alt="Smile Hub Logo" className="w-auto h-6" />
+                        </div>
+                        <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-sky-500 bg-clip-text text-transparent">
+                            Smile Hub
+                        </span>
                     </div>
                     <a href="/">
-                        <Button variant="ghost" size="sm" className="rounded-full text-gray-500 hover:text-sky-600">
+                        <Button type="button" variant="ghost" size="sm" className="rounded-full text-gray-500 hover:text-sky-600">
                             <ArrowLeft className="w-4 h-4 mr-2" /> View Site
                         </Button>
                     </a>
@@ -425,7 +437,7 @@ export default function AdminPage() {
                 <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
                     <div>
                         <h1 className="text-3xl font-bold text-gray-900">Practice Dashboard</h1>
-                        <p className="text-gray-500 text-sm">Real-time scheduling, transformations, and patient inquiries.</p>
+                        <p className="text-gray-500 text-sm">Real-time scheduling and inquiry management.</p>
                     </div>
                     <LoginButton />
                 </div>
@@ -441,11 +453,14 @@ export default function AdminPage() {
                         <TabsTrigger value="gallery" className="rounded-xl py-2.5 px-5">
                             <ImageIcon className="w-4 h-4 mr-2" /> Gallery
                         </TabsTrigger>
-                        <TabsTrigger value="messages" className="rounded-xl py-2.5 px-5">
+                        <TabsTrigger value="messages" className="rounded-xl py-2.5 px-5 relative">
                             <MessageSquare className="w-4 h-4 mr-2" /> Messages
-                            {messages.length > 0 && (
-                                <span className="ml-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] rounded-full">
-                                    {messages.length}
+                            {unreadCount > 0 && (
+                                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-white text-[9px] font-bold items-center justify-center">
+                                        {unreadCount}
+                                    </span>
                                 </span>
                             )}
                         </TabsTrigger>
@@ -456,10 +471,12 @@ export default function AdminPage() {
 
                     <TabsContent value="calendar" className="mt-0 outline-none">
                         <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm min-h-[500px]">
-                            {/* Calendar Header with Manual Booking Trigger */}
                             <div className="flex justify-between items-center mb-6 px-2">
-                                <h2 className="text-xl font-bold text-slate-800">Clinic Schedule</h2>
+                                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                    <Calendar className="w-5 h-5 text-sky-500" /> Clinic Schedule
+                                </h2>
                                 <Button
+                                    type="button"
                                     onClick={() => setIsBookingDialogOpen(true)}
                                     className="bg-sky-600 hover:bg-sky-700 text-white rounded-full shadow-lg shadow-sky-100 transition-all hover:scale-105"
                                 >
@@ -484,34 +501,6 @@ export default function AdminPage() {
                     <TabsContent value="gallery" className="mt-0 outline-none">
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                             <div className="lg:col-span-1 space-y-6">
-                                {/* Cloudinary Configuration Guide */}
-                                <div className="bg-blue-50 border border-blue-100 p-5 rounded-3xl space-y-3">
-                                    <h4 className="text-sm font-bold text-blue-900 flex items-center gap-2">
-                                        <AlertCircle className="w-4 h-4" /> Cloudinary Requirements
-                                    </h4>
-                                    <ul className="text-xs space-y-2 text-blue-800">
-                                        <li className="flex items-start gap-2">
-                                            <div className="mt-1"><CheckCircle2 className="w-3 h-3 text-blue-600" /></div>
-                                            <span>Go to <strong>Settings &gt; Upload</strong> in Cloudinary</span>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <div className="mt-1"><CheckCircle2 className="w-3 h-3 text-blue-600" /></div>
-                                            <span>Add an <strong>Unsigned Preset</strong> named: <code className="bg-blue-100 px-1 rounded font-bold">smile_hub_gallery</code></span>
-                                        </li>
-                                        <li className="flex items-start gap-2 text-[10px] bg-blue-100/50 p-2 rounded-xl">
-                                            <span>Current Cloud: <strong>{process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || 'Not Configured'}</strong></span>
-                                        </li>
-                                    </ul>
-                                    <a
-                                        href="https://cloudinary.com/console/settings/upload"
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="text-xs font-bold text-blue-600 flex items-center gap-1 hover:underline"
-                                    >
-                                        Open Cloudinary Settings <ExternalLink className="w-3 h-3" />
-                                    </a>
-                                </div>
-
                                 <form onSubmit={handleGalleryUpload} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm">
                                     <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
                                         <Plus className="w-5 h-5 text-sky-500" /> New Gallery Item
@@ -540,16 +529,16 @@ export default function AdminPage() {
                                         )}
                                     </div>
 
-                                    <Button disabled={isUploading} className="w-full h-12 rounded-xl bg-sky-600 hover:bg-sky-700 shadow-lg shadow-sky-100">
+                                    <Button type="submit" disabled={isUploading} className="w-full h-12 rounded-xl bg-sky-600 hover:bg-sky-700 shadow-lg shadow-sky-100">
                                         {isUploading ? <Loader2 className="animate-spin mr-2" /> : <Upload className="mr-2 w-4 h-4" />}
-                                        {isUploading ? 'Connecting to Cloudinary...' : 'Publish to Gallery'}
+                                        {isUploading ? 'Uploading...' : 'Publish to Gallery'}
                                     </Button>
                                 </form>
                             </div>
 
                             <div className="lg:col-span-2">
                                 <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm min-h-[400px]">
-                                    <h3 className="text-lg font-bold mb-6">Live Gallery</h3>
+                                    <h3 className="text-lg font-bold mb-6">Gallery Items</h3>
                                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                                         {galleryItems.map(item => (
                                             <div key={item.id} className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-100 bg-slate-50 shadow-sm">
@@ -557,6 +546,7 @@ export default function AdminPage() {
 
                                                 <div className="absolute inset-0 bg-slate-900/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
                                                     <Button
+                                                        type="button"
                                                         size="icon"
                                                         variant={item.isPinned ? "default" : "secondary"}
                                                         className={cn("rounded-full h-8 w-8", item.isPinned && "bg-sky-500")}
@@ -564,7 +554,7 @@ export default function AdminPage() {
                                                     >
                                                         <Pin className={cn("w-4 h-4", item.isPinned && "fill-current")} />
                                                     </Button>
-                                                    <Button size="icon" variant="destructive" className="rounded-full h-8 w-8" onClick={() => deleteGalleryItem(item.id)}>
+                                                    <Button type="button" size="icon" variant="destructive" className="rounded-full h-8 w-8" onClick={() => deleteGalleryItem(item.id)}>
                                                         <Trash2 className="w-4 h-4" />
                                                     </Button>
                                                 </div>
@@ -594,21 +584,29 @@ export default function AdminPage() {
                             ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {messages.map((msg) => (
-                                        <Card key={msg.id} className="border-slate-100 shadow-sm hover:shadow-md transition-shadow rounded-2xl overflow-hidden">
+                                        <Card key={msg.id} className={cn(
+                                            "border shadow-sm rounded-2xl overflow-hidden transition-all duration-300",
+                                            msg.isRead ? "border-slate-100 opacity-80" : "border-sky-200 bg-sky-50/30 ring-1 ring-sky-100"
+                                        )}>
                                             <CardContent className="p-6">
                                                 <div className="flex justify-between items-start mb-4">
                                                     <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-sky-100 rounded-full flex items-center justify-center text-sky-600 font-bold">
+                                                        <div className={cn(
+                                                            "w-10 h-10 rounded-full flex items-center justify-center font-bold",
+                                                            msg.isRead ? "bg-slate-100 text-slate-500" : "bg-sky-500 text-white shadow-md shadow-sky-100"
+                                                        )}>
                                                             {msg.name?.charAt(0).toUpperCase()}
                                                         </div>
                                                         <div>
-                                                            <h3 className="font-bold text-slate-900">{msg.name}</h3>
-                                                            <p className="text-xs text-slate-500 flex items-center gap-1">
-                                                                <Clock className="w-3 h-3" /> {msg.createdAt}
-                                                            </p>
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="font-bold text-slate-900">{msg.name}</h3>
+                                                                {!msg.isRead && <span className="h-2 w-2 rounded-full bg-sky-500 animate-pulse" />}
+                                                            </div>
+                                                            <p className="text-xs text-slate-500">{msg.createdAt}</p>
                                                         </div>
                                                     </div>
                                                     <Button
+                                                        type="button"
                                                         variant="ghost"
                                                         size="icon"
                                                         className="text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-full h-8 w-8"
@@ -618,12 +616,12 @@ export default function AdminPage() {
                                                     </Button>
                                                 </div>
 
-                                                <div className="bg-slate-50 p-4 rounded-xl mb-4 border border-slate-100">
+                                                <div className="bg-white/50 p-4 rounded-xl mb-4 border border-slate-100">
                                                     <p className="text-sm text-slate-700 italic">"{msg.message}"</p>
                                                 </div>
 
                                                 <div className="flex flex-wrap gap-2">
-                                                    <a href={`mailto:${msg.email}`} className="text-xs flex items-center gap-1.5 text-sky-600 bg-sky-50 px-3 py-1.5 rounded-full hover:bg-sky-100 transition-colors font-medium">
+                                                    <a href={`mailto:${msg.email}`} className="text-xs flex items-center gap-1.5 text-sky-600 bg-white border border-sky-100 px-3 py-1.5 rounded-full hover:bg-sky-50 transition-colors font-medium shadow-sm">
                                                         <Mail className="w-3 h-3" /> {msg.email}
                                                     </a>
                                                 </div>
@@ -770,8 +768,9 @@ export default function AdminPage() {
                         />
                     </div>
                     <DialogFooter>
-                        <Button variant="ghost" onClick={() => setIsCancelDialogOpen(false)} className="rounded-full">Dismiss</Button>
+                        <Button type="button" variant="ghost" onClick={() => setIsCancelDialogOpen(false)} className="rounded-full">Dismiss</Button>
                         <Button
+                            type="button"
                             variant="destructive"
                             disabled={!cancelReason || !!updatingId}
                             onClick={() => selectedAppointment && updateStatus(selectedAppointment.id, 'cancelled', cancelReason)}
