@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Card, CardContent } from '@/components/ui/card';
-import { MapPin, Phone, Mail, Clock, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { MapPin, Phone, Mail, Clock, Send, Loader2, CheckCircle2, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const contactSchema = z.object({
@@ -31,22 +31,22 @@ const contactInfo = [
   {
     icon: MapPin,
     title: 'Visit Us',
-    details: ['123 Dental Street', 'Healthcare District', 'New York, NY 10001'],
+    details: ['The Smile Hub', 'Hokandara Road, Athurugiriya'],
   },
   {
     icon: Phone,
     title: 'Call Us',
-    details: ['+1 (555) 123-4567', '+1 (555) 987-6543'],
+    details: ['+94 77 742 1620'],
   },
   {
     icon: Mail,
     title: 'Email Us',
-    details: ['info@smilehub.com', 'appointments@smilehub.com'],
+    details: ['mkovitigala@gmail.com'],
   },
   {
     icon: Clock,
     title: 'Opening Hours',
-    details: ['Mon - Fri: 9:00 AM - 6:00 PM', 'Sat: 9:00 AM - 2:00 PM', 'Sun: Closed'],
+    details: ['Mon - Sun: 9:00 AM - 9:00 PM'],
   },
 ];
 
@@ -111,13 +111,13 @@ export function Contact() {
           </h2>
           <p className="text-lg text-gray-600">
             Have questions or need more information? We are here to help.
-            Reach out to us through any of the channels below.
+            Reach out to us through any of the channels below or visit our clinic.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
-          {/* Contact Info */}
-          <div className="space-y-6">
+          {/* Contact Info & Map */}
+          <div className="space-y-8">
             {/* Contact Cards */}
             <div className="grid sm:grid-cols-2 gap-4">
               {contactInfo.map((info, index) => {
@@ -125,7 +125,7 @@ export function Contact() {
                 return (
                   <Card
                     key={index}
-                    className="border-0 shadow-lg hover:shadow-xl transition-shadow"
+                    className="border-0 shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     <CardContent className="p-6">
                       <div className="w-12 h-12 bg-sky-100 rounded-xl flex items-center justify-center mb-4">
@@ -143,21 +143,38 @@ export function Contact() {
               })}
             </div>
 
-            {/* Map Placeholder */}
-            <Card className="border-0 shadow-lg overflow-hidden">
-              <div className="aspect-video bg-gradient-to-br from-sky-100 to-sky-200 flex items-center justify-center">
-                <div className="text-center">
-                  <MapPin className="w-12 h-12 text-sky-400 mx-auto mb-2" />
-                  <p className="text-sky-600 font-medium">Interactive Map</p>
-                  <p className="text-sky-500 text-sm">123 Dental Street, New York</p>
+            {/* Live Interactive Map */}
+            <Card className="border-0 shadow-xl overflow-hidden group">
+              <div className="relative">
+                <iframe
+                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3961.034734898444!2d79.98230777587816!3d6.879505718842429!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ae251007488e535%3A0x4f0b924fd51a35ba!2sThe%20Smile%20Hub%20-%20Dental%20Hospital%20%26%20dental%20impant%20center%20Athurugiriya%20(By%20Dr%20M.K%20Ovitigala)!5e0!3m2!1sen!2slk!4v1740019543122!5m2!1sen!2slk"
+                  width="100%"
+                  height="350"
+                  style={{ border: 0 }}
+                  allowFullScreen
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                  title="The Smile Hub Location"
+                  className="grayscale-[20%] group-hover:grayscale-0 transition-all duration-500"
+                ></iframe>
+                <div className="absolute top-4 right-4">
+                  <a
+                    href="https://www.google.com/maps/place/The+Smile+Hub+-+Dental+Hospital+%26+dental+impant+center+Athurugiriya+(By+Dr+M.K+Ovitigala)/@6.8795005,79.9848827,16z"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button size="sm" variant="secondary" className="shadow-lg rounded-full h-8 px-3 text-[10px] font-bold uppercase tracking-wider">
+                      Open in Maps <ExternalLink className="ml-1 h-3 w-3" />
+                    </Button>
+                  </a>
                 </div>
               </div>
             </Card>
           </div>
 
           {/* Contact Form */}
-          <Card className="border-0 shadow-xl">
-            <CardContent className="p-6 md:p-8">
+          <Card className="border-0 shadow-2xl">
+            <CardContent className="p-6 md:p-10">
               <h3 className="text-2xl font-bold text-gray-900 mb-6">Send us a Message</h3>
 
               {isSuccess ? (
@@ -167,12 +184,12 @@ export function Contact() {
                   </div>
                   <h4 className="text-xl font-semibold text-gray-900 mb-2">Message Sent!</h4>
                   <p className="text-gray-600 mb-4">
-                    Thank you for contacting us. We will get back to you soon.
+                    Thank you for contacting us. Our team will get back to you soon at the email address provided.
                   </p>
                   <Button
                     onClick={() => setIsSuccess(false)}
                     variant="outline"
-                    className="border-sky-200 text-sky-600"
+                    className="border-sky-200 text-sky-600 hover:bg-sky-50 rounded-full"
                   >
                     Send Another Message
                   </Button>
@@ -185,11 +202,11 @@ export function Contact() {
                       name="name"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Your Name</FormLabel>
+                          <FormLabel className="text-gray-700">Your Name</FormLabel>
                           <FormControl>
                             <Input
-                              placeholder="John Doe"
-                              className="border-gray-200 focus:border-sky-500"
+                              placeholder="Niranga Nayanajith"
+                              className="border-gray-200 focus:ring-sky-500 rounded-xl py-6"
                               {...field}
                             />
                           </FormControl>
@@ -203,12 +220,12 @@ export function Contact() {
                       name="email"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Email Address</FormLabel>
+                          <FormLabel className="text-gray-700">Email Address</FormLabel>
                           <FormControl>
                             <Input
                               type="email"
-                              placeholder="john@example.com"
-                              className="border-gray-200 focus:border-sky-500"
+                              placeholder="Niranga@example.com"
+                              className="border-gray-200 focus:ring-sky-500 rounded-xl py-6"
                               {...field}
                             />
                           </FormControl>
@@ -222,11 +239,11 @@ export function Contact() {
                       name="message"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Your Message</FormLabel>
+                          <FormLabel className="text-gray-700">Your Message</FormLabel>
                           <FormControl>
                             <Textarea
-                              placeholder="How can we help you?"
-                              className="border-gray-200 focus:border-sky-500 min-h-[150px] resize-none"
+                              placeholder="How can we help you? Describe your dental concerns..."
+                              className="border-gray-200 focus:ring-sky-500 min-h-[150px] resize-none rounded-2xl"
                               {...field}
                             />
                           </FormControl>
@@ -238,17 +255,17 @@ export function Contact() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white py-6 shadow-lg shadow-sky-200"
+                      className="w-full bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white py-7 rounded-2xl text-lg font-bold shadow-lg shadow-sky-100 transition-all active:scale-[0.98]"
                     >
                       {isSubmitting ? (
                         <>
                           <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                          Sending...
+                          Processing...
                         </>
                       ) : (
                         <>
                           Send Message
-                          <Send className="ml-2 h-4 w-4" />
+                          <Send className="ml-2 h-5 w-5" />
                         </>
                       )}
                     </Button>
