@@ -112,9 +112,7 @@ export function Navbar() {
                       <div className="relative w-10 h-10 flex items-center justify-center">
                         <img src={Logo.src} alt="Smile Hub Logo" className="w-auto h-6" />
                       </div>
-                      <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-sky-500 bg-clip-text text-transparent">
-                        Smile Hub
-                      </span>
+
                     </div>
                     <span className="text-xl font-bold bg-gradient-to-r from-sky-600 to-sky-500 bg-clip-text text-transparent">
                       Smile Hub
