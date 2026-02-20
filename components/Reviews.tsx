@@ -187,7 +187,7 @@ export function Reviews() {
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-gray-900">{review.author_name}</p>
-                                                    <p className="text-xs text-sky-500 font-medium uppercase tracking-wider">{review.relative_time_description}</p>
+
                                                 </div>
                                             </div>
                                         </CardContent>
