@@ -19,7 +19,7 @@ export function Hero() {
       {/* Background */}
       <div className="absolute inset-0 hero-gradient" />
       <div className="absolute inset-0 pattern-bg opacity-30" />
-      
+
       {/* Decorative shapes */}
       <div className="absolute top-20 left-10 w-72 h-72 bg-sky-300/30 rounded-full blur-3xl" />
       <div className="absolute bottom-20 right-10 w-96 h-96 bg-sky-400/20 rounded-full blur-3xl" />
@@ -32,7 +32,7 @@ export function Hero() {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg mb-8 animate-fade-in">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
             <span className="text-sm font-medium text-gray-700">
-              Trusted by over 10,000+ happy patients
+              Trusted by over 1000+ happy patients
             </span>
           </div>
 
@@ -89,7 +89,7 @@ export function Hero() {
                 <Star className="w-6 h-6 text-sky-600" />
               </div>
               <div className="text-left">
-                <p className="text-2xl font-bold text-gray-900">10K+</p>
+                <p className="text-2xl font-bold text-gray-900">1K+</p>
                 <p className="text-sm text-gray-600">Happy Patients</p>
               </div>
             </div>

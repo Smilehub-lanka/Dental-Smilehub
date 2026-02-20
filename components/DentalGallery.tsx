@@ -48,7 +48,7 @@ export function DentalGallery({ items = [] }: DentalGalleryProps) {
                             <div className="aspect-[4/3] overflow-hidden relative">
                                 {item.isPinned && (
                                     <div className="absolute top-3 left-3 z-10 bg-sky-500 text-white p-1.5 rounded-lg shadow-md flex items-center gap-1 text-xs font-bold uppercase">
-                                        <Sparkles className="w-3.5 h-3.5" /> Featured
+                                        <Sparkles className="w-3.5 h-3.5" />
                                     </div>
                                 )}
 
@@ -78,15 +78,27 @@ export function DentalGallery({ items = [] }: DentalGalleryProps) {
                                 View Full Smile Gallery <Maximize2 className="ml-2 w-5 h-5" />
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-6xl h-[90vh] overflow-y-auto bg-slate-50">
-                            <DialogHeader className="mb-8">
-                                <DialogTitle className="text-3xl font-bold text-center">Full Results Gallery</DialogTitle>
+
+                        {/* Updated DialogContent for 90% screen fill */}
+                        <DialogContent className="sm:max-w-[90vw] w-[90vw] h-[90vh] max-h-[90vh] p-0 flex flex-col overflow-hidden bg-slate-50">
+                            <DialogHeader className="p-6 pb-2 shrink-0 bg-white border-b border-slate-200">
+                                <DialogTitle className="text-2xl font-bold text-center">Full Results Gallery</DialogTitle>
                             </DialogHeader>
 
-                            <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4 px-2">
-                                {items.map((item) => (
-                                    <GalleryItem key={item.id} item={item} />
-                                ))}
+                            {/* Scrollable container with Masonry Layout */}
+                            <div className="flex-1 overflow-y-auto p-6">
+                                {/* 
+                                   Updated columns: 
+                                   - Default: 2 columns
+                                   - sm (640px): 3 columns
+                                   - md (768px): 4 columns
+                                   - lg (1024px): 5 columns 
+                                */}
+                                <div className="columns-2 sm:columns-3 md:columns-4 lg:columns-5 gap-4 space-y-4">
+                                    {items.map((item) => (
+                                        <GalleryItem key={item.id} item={item} />
+                                    ))}
+                                </div>
                             </div>
                         </DialogContent>
                     </Dialog>
